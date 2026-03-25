@@ -67,11 +67,3 @@ A API ganhou o endpoint `GET /api/calc/sqrt?x=16`, implementado em [CalculatorSe
 2. Faça push para `main` para validar CI e deploy em `prod`.
 3. Use `Run workflow` em `luiz_coser_DR4_TP3` para disparar o job do runner auto-hospedado.
 4. Use `Run workflow` em `env-context-demo` para registrar a evidencia dos escopos de ambiente.
-
-## Evidencias
-
-A pasta [evidencias](/C:/Users/luizc/luiz_coser_dr4_tp3/evidencias) contem os logs locais, o checklist de evidencias e o guia passo a passo para capturas e montagem do PDF:
-
-- [PASSO_A_PASSO_TP3.md](/C:/Users/luizc/luiz_coser_dr4_tp3/evidencias/PASSO_A_PASSO_TP3.md)
-- [logs-locais.md](/C:/Users/luizc/luiz_coser_dr4_tp3/evidencias/logs-locais.md)
-- [COMANDOS_E_EVIDENCIAS.md](/C:/Users/luizc/luiz_coser_dr4_tp3/COMANDOS_E_EVIDENCIAS.md)
