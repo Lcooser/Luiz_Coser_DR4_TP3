@@ -1,0 +1,150 @@
+name: luiz_coser_DR4_TP3
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+    inputs:
+      run_self_hosted_demo:
+        description: "Executar o job do runner auto-hospedado"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Lint Test Build
+    runs-on: ubuntu-latest
+    env:
+      APP_MODE: ${{ vars.APP_MODE }}
+      SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Show repository variables
+        run: |
+          echo "APP_MODE=$APP_MODE"
+          echo "SUPPORT_EMAIL=$SUPPORT_EMAIL"
+
+      - name: Simulate protected action with secret
+        env:
+          PROD_TOKEN: ${{ secrets.PROD_TOKEN }}
+        run: |
+          if [ -z "$PROD_TOKEN" ]; then
+            echo "PROD_TOKEN nao configurado" >&2
+            exit 1
+          fi
+          echo "Secret disponivel para etapa protegida. Tamanho: ${#PROD_TOKEN}"
+
+      - name: Lint
+        run: ./mvnw spotless:check
+
+      - name: Test
+        run: ./mvnw test
+
+      - name: Build
+        run: ./mvnw -DskipTests package
+
+  self-hosted-demo:
+    name: Self Hosted Runner Demo
+    if: github.event_name == 'workflow_dispatch' && inputs.run_self_hosted_demo
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Runner details
+        shell: pwsh
+        run: |
+          Write-Host "Actor: ${{ github.actor }}"
+          Write-Host "Runner OS: ${{ runner.os }}"
+          hostname
+          java -version
+
+      - name: Install extra software on Windows runner
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install jq -y
+          jq --version
+
+      - name: Install extra software on Linux runner
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          jq --version
+
+      - name: Install extra software on macOS runner
+        if: runner.os == 'macOS'
+        run: |
+          brew install jq
+          jq --version
+
+  create-config-issue:
+    name: Create Issue When Config Is Missing
+    if: vars.SUPPORT_EMAIL == ''
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Open issue with GITHUB_TOKEN
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/$REPO/issues \
+            -d '{"title":"Config ausente: SUPPORT_EMAIL","body":"Workflow criou esta issue automaticamente porque a variavel SUPPORT_EMAIL nao foi configurada."}'
+
+  deploy-dev:
+    name: Deploy Dev
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    needs: ci
+    environment: dev
+    env:
+      DEPLOY_URL: ${{ vars.DEV_DEPLOY_URL }}
+      STAGE: dev
+    steps:
+      - name: Deploy to dev
+        run: |
+          echo "Deployando em $STAGE"
+          echo "Destino: $DEPLOY_URL"
+
+  deploy-prod:
+    name: Deploy Prod
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: ci
+    environment: prod
+    env:
+      PROD_TOKEN: ${{ secrets.PROD_TOKEN }}
+      STAGE: prod
+    steps:
+      - name: Validate prod secret
+        run: |
+          if [ -z "$PROD_TOKEN" ]; then
+            echo "PROD_TOKEN nao configurado no ambiente prod" >&2
+            exit 1
+          fi
+
+      - name: Deploy to prod
+        run: |
+          echo "Deployando em $STAGE com aprovacao do environment prod"

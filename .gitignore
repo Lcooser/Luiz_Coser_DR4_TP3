@@ -1,0 +1,14 @@
+/target/
+/.idea/
+/.vscode/
+*.iml
+*.log
+/.classpath
+/.project
+/.settings/
+/.DS_Store
+Thumbs.db
+/evidencias/*.png
+/evidencias/*.jpg
+/evidencias/*.jpeg
+/evidencias/*.gif

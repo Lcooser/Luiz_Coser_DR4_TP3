@@ -1,0 +1,33 @@
+name: env-context-demo
+
+on:
+  workflow_dispatch:
+
+env:
+  STAGE: test
+  SCOPE_MESSAGE: workflow
+
+jobs:
+  show-contexts:
+    runs-on: ubuntu-latest
+    env:
+      SCOPE_MESSAGE: job
+      JOB_ONLY: enabled
+    steps:
+      - name: Display GitHub and runner contexts
+        run: |
+          echo "github.actor=${{ github.actor }}"
+          echo "runner.os=${{ runner.os }}"
+          echo "STAGE=$STAGE"
+          echo "SCOPE_MESSAGE=$SCOPE_MESSAGE"
+          echo "JOB_ONLY=$JOB_ONLY"
+
+      - name: Override env in step
+        env:
+          SCOPE_MESSAGE: step
+          STEP_ONLY: enabled
+        run: |
+          echo "STAGE=$STAGE"
+          echo "SCOPE_MESSAGE=$SCOPE_MESSAGE"
+          echo "JOB_ONLY=$JOB_ONLY"
+          echo "STEP_ONLY=$STEP_ONLY"
